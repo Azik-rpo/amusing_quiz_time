@@ -1,0 +1,283 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Amusing Quiz Time</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<canvas id="bgCanvas"></canvas>
+<div class="neon-float f1"></div>
+<div class="neon-float f2"></div>
+
+<div id="videoScreen" class="screen active">
+  <video id="introVideo" autoplay muted playsinline>
+    <source src="intro.mp4" type="video/mp4">
+    Ваш браузер не поддерживает видео. Продолжите игру.
+  </video>
+  <button id="introSkipBtn" class="intro-skip">Пропустить</button>
+</div>
+
+<div id="loginScreen" class="screen">
+  <div class="scanline"></div>
+  <div class="cyber-container">
+    <h2 class="cyber-header">⚡ AMUSING QUIZ TIME ⚡</h2>
+    <div class="cyber-box">
+      <input id="nameInput" placeholder="👤 Никнейм" maxlength="20">
+      <input id="passwordInput" type="password" placeholder="🔐 Пароль" maxlength="20">
+      <button onclick="login()">→ ДОСТУП ←</button>
+    </div>
+  </div>
+</div>
+
+<div id="lobbyScreen" class="screen">
+  <div class="lobby-container">
+    <h1 class="lobby-title">⚡ Лобби</h1>
+    <div class="lobby-actions">
+      <button onclick="showLeaderboard()">🏆 Leaderboard</button>
+      <button onclick="openQuizCreator()">✍️ Создать квиз</button>
+      <button onclick="next('modeScreen')">🎯 Выбрать сложность</button>
+      <button onclick="openJoinModal()">🔗 Подключиться по коду/ссылке</button>
+      <button onclick="openSettings()">⚙️ Настройки</button>
+    </div>
+
+    <div class="lobby-sections">
+      <section class="records">
+        <h3>Рекорды</h3>
+        <div id="recordsDisplay">Нет данных</div>
+      </section>
+      <section class="recent">
+        <h3>Недавние игры</h3>
+        <div id="recentGames">Пусто</div>
+      </section>
+      <section class="recent">
+        <h3>Мои квизы</h3>
+        <div id="customQuizzesList">Пока нет квизов</div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<!-- Quiz Creator Modal -->
+<div id="quizCreator" class="modal" onclick="if(event.target===this) closeQuizCreator()">
+  <div class="modal-content wide">
+    <div class="modal-header">
+      <h2>Создать собственный квиз</h2>
+      <button class="close-btn" onclick="closeQuizCreator()">✕</button>
+    </div>
+    <div class="modal-body" id="quizCreatorBody">
+      <div class="creator-header">
+        <label>Название квиза: <input id="quizTitle" maxlength="60" placeholder="Мой супер квиз"></label>
+        <div class="creator-progress">Вопросов: <strong id="qCount">0</strong>/20–40</div>
+      </div>
+      <div class="creator-templates">
+        <label>Шаблон: <select id="templateSelect" onchange="loadTemplate()">
+          <option value="">— Начать с пустого —</option>
+          <option value="tech">💻 Информатика (20)</option>
+          <option value="gen">🧠 Общие знания (25)</option>
+        </select></label>
+      </div>
+      <div id="questionBuilder"></div>
+      <div class="creator-controls">
+        <button id="addQuestionBtn" onclick="addQuestionBuilder()">+ Добавить вопрос</button>
+        <button onclick="saveCustomQuiz()" class="save-btn">💾 Сохранить квиз</button>
+        <button onclick="previewQuiz()" class="preview-btn">👁️ Превью</button>
+        <div class="creator-hint">Варианты: 2–4 ответа. Квиз должен содержать 20–40 вопросов.</div>
+      </div>
+      <div id="creatorErrors" class="errors"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Join Modal -->
+<div id="joinModal" class="modal" onclick="if(event.target===this) closeJoinModal()">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>Подключиться к игре</h2>
+      <button class="close-btn" onclick="closeJoinModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <label>Введите код комнаты: <input id="joinCodeInput" maxlength="12"></label>
+      <div class="join-controls">
+        <button onclick="joinByCode(document.getElementById('joinCodeInput').value)">Подключиться</button>
+      </div>
+      <p class="muted">Или откройте ссылку от хоста (она содержит код комнаты).</p>
+    </div>
+  </div>
+</div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal" onclick="if(event.target===this) closeSettings()">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Настройки</h2>
+          <button class="close-btn" onclick="closeSettings()">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="settings-row">
+            <label>Музыка: <button id="musicToggleBtn" onclick="toggleMusic()">Вкл/Выкл</button></label>
+          </div>
+          <div class="settings-row">
+            <label>Трек: <button id="musicSwitchBtn" onclick="switchMusicTrack()">Переключить трек</button></label>
+            <div class="muted">Текущий: <span id="currentTrackLabel">ariamath.mp3</span></div>
+          </div>
+          <div class="settings-row">
+            <label>Персонаж снизу: <button id="charToggleBtn" onclick="toggleCharacter()">Показать/Скрыть</button></label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+<div id="modeScreen" class="screen">
+  <div class="menu-top">
+    <h1 class="mode-title">🧠 ВЫБЕРИ РЕЖИМ</h1>
+    <button class="team-small-btn" onclick="next('teamScreen')">Команда</button>
+  </div>
+  <div class="mode-container">
+    <div class="mode-card" onclick="startGame(30)">
+      <h3>🟢 ЛЕГКО</h3>
+      <p>30 вопросов • 30 сек</p>
+    </div>
+    <div class="mode-card" onclick="startGame(20)">
+      <h3>🟡 СРЕДНЕ</h3>
+      <p>30 вопросов • 20 сек</p>
+    </div>
+    <div class="mode-card" onclick="startGame(10)">
+      <h3>🔴 СЛОЖНО</h3>
+      <p>30 вопросов • 10 сек</p>
+    </div>
+  </div>
+  <div class="mode-actions">
+    <button class="back-btn" onclick="next('lobbyScreen'); renderLobby(); showCharacter('Вернулись в лобби 🎯')">← ВЕРНУТЬСЯ</button>
+    <button class="team-small-btn" onclick="next('teamScreen')">Команда</button>
+  </div>
+</div>
+
+<div id="teamScreen" class="screen">
+  <div class="team-header">
+    <h1>🗿 Команда</h1>
+    <button class="team-close-btn" onclick="next('modeScreen')">← Главное меню</button>
+  </div>
+  <div class="team-grid">
+    <div class="statue statue-right" onclick="handleTeamStatue('m')">
+      <div class="statue-hood"></div>
+      <div class="statue-visor"></div>
+      <div class="statue-body"></div>
+      <div class="statue-label">Коллега М</div>
+    </div>
+    <div class="statue statue-left" onclick="handleTeamStatue('e')">
+      <div class="statue-head"></div>
+      <div class="statue-brush"></div>
+      <div class="statue-arm brush-arm"></div>
+      <div class="statue-body"></div>
+      <div class="statue-label">Коллега Е</div>
+    </div>
+    <div class="statue statue-center" onclick="handleTeamStatue('scrum')">
+      <div class="statue-monitor">
+        <div class="binary-line">01010101</div>
+        <div class="binary-line">10101010</div>
+      </div>
+      <div class="statue-body"></div>
+      <div class="statue-hand left-hand"></div>
+      <div class="statue-hand right-hand"></div>
+      <div class="statue-label">Коллега A</div>
+    </div>
+  </div>
+  <button class="team-back-btn" onclick="next('modeScreen')">← Вернуться в меню</button>
+
+  <div id="teamPopup" class="team-popup hidden">
+    <div class="team-popup-card">
+      <button class="team-popup-close" onclick="closeTeamPopup()">✕</button>
+      <div id="teamPopupContent"></div>
+    </div>
+  </div>
+
+  <div id="inkSplash" class="ink-splash hidden"></div>
+</div>
+
+<div id="game" class="screen">
+  <div class="game-header">
+    <div class="player-info">
+      <h2 id="welcome">👤 Игрок</h2>
+      <h3 id="score">💯 Очки: 0</h3>
+    </div>
+    <div class="game-stats">
+      <h3 id="progress">Вопрос 1 / 30</h3>
+      <h3 id="timer">⏱ 30</h3>
+    </div>
+  </div>
+  <div class="game-content">
+    <h3 id="question" class="question-text"></h3>
+    <div class="answers-container">
+      <button class="answerBtn" onclick="selectAnswer(this)"></button>
+      <button class="answerBtn" onclick="selectAnswer(this)"></button>
+      <button class="answerBtn" onclick="selectAnswer(this)"></button>
+    </div>
+    <div class="game-controls">
+      <button id="confirmBtn" class="confirm-btn" onclick="confirmAnswer()">✓ ПОДТВЕРДИТЬ</button>
+      <button class="quit-btn" onclick="quitGame()">✗ ВЫХОД</button>
+    </div>
+  </div>
+</div>
+
+<!-- Event / Mini-game Screen -->
+<div id="eventScreen" class="screen">
+  <div class="event-container">
+    <h2 id="eventTitle">Event</h2>
+    <div id="eventTimer" class="event-timer">⏱ 02:00</div>
+    <div id="eventBody"></div>
+    <div class="event-controls">
+      <button onclick="endEvent()" id="skipEventBtn" class="skip-btn">Пропустить</button>
+    </div>
+  </div>
+</div>
+
+<div id="finish" class="screen">
+  <div class="finish-container">
+    <h1 class="finish-title">🎉 ИГРА ЗАВЕРШЕНА</h1>
+    <div class="result-box">
+      <h2 id="finalText"></h2>
+      <p id="resultMsg" class="result-msg"></p>
+    </div>
+    <div class="record-display">
+      <h3>🏆 ЛУЧШИЙ РЕЗУЛЬТАТ</h3>
+      <div id="record" class="record-box"></div>
+    </div>
+    <div class="finish-controls">
+      <button onclick="next('modeScreen'); showCharacter('Попробуем снова? 🚀')" class="restart-btn">🔄 ИГРАТЬ СНОВА</button>
+      <button onclick="next('lobbyScreen'); renderLobby(); showCharacter('Вернулись в лобби 🎯')" class="lobby-return-btn">🏠 НА ЛОББИ</button>
+      <button onclick="logout()" class="exit-btn">← ГЛАВНОЕ МЕНЮ</button>
+    </div>
+  </div>
+</div>
+
+<div id="leaderboardModal" class="modal" onclick="if(event.target===this) closeLeaderboard()">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>🏆 ТАБЛИЦА ЛИДЕРОВ 🏆</h2>
+      <button class="close-btn" onclick="closeLeaderboard()">✕</button>
+    </div>
+    <div class="leaderboard-list" id="leaderboardList">
+      <p class="no-records">Нет рекордов</p>
+    </div>
+  </div>
+</div>
+
+<div class="character-box" id="characterBox" style="display:none;">
+  <div class="bubble" id="speech"></div>
+  <img class="character" src="character.png" alt="Game character">
+</div>
+
+<!-- Sound enable prompt (shown if autoplay blocked) -->
+<div id="enableSoundPrompt" class="sound-prompt hidden">
+  <button onclick="enableSound()">🔊 Включить звук</button>
+  <div class="hint">Если звук не включился автоматически, нажмите здесь</div>
+</div>
+
+<audio id="bgMusic" preload="auto"></audio>
+<script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
